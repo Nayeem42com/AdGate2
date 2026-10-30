@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ad Gate - Telegram Mini App</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f3ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              accent: '#06b6d4',
+              accentHover: '#0891b2'
+            },
+            darkBg: '#0f172a',
+            cardBg: '#1e293b',
+            borderDark: '#334155'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #090d16;
+      color: #f8fafc;
+    }
+
+    /* Hide Scrollbar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-nav {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Wheel Pointer */
+    .wheel-pointer {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 24px solid #f43f5e;
+      position: absolute;
+      top: -10px;
+      left: calc(50% - 14px);
+      z-index: 20;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    /* Glow Effects */
+    .glow-purple {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Pulse animation */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.6); }
+    }
+
+    .pulse-btn {
+      animation: pulseGlow 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 flex justify-center items-center min-h-screen p-0 sm:p-4 overflow-x-hidden">
+
+  <!-- Main Mobile App Shell -->
+  <div class="w-full max-w-md h-screen sm:h-[844px] bg-darkBg sm:rounded-[36px] shadow-2xl relative flex flex-col overflow-hidden border border-slate-800">
+
+    <!-- Top Header / App Bar -->
+    <header class="pt-4 pb-3 px-4 glass-card sticky top-0 z-30 flex items-center justify-between border-b border-slate-800/80">
+      <div class="flex items-center gap-3">
+        <!-- Ad Gate SVG Logo -->
+        <div class="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-brand-accent p-0.5 shadow-md flex items-center justify-center">
+          <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-base tracking-wide bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">Ad Gate</span>
+            <span class="text-[10px] bg-brand-500/20 text-brand-accent px-1.5 py-0.5 rounded-full font-semibold border border-brand-accent/30">v2.0</span>
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.2 rounded font-medium border border-amber-500/20 flex items-center gap-1">
+              <i class="fa-solid fa-crown text-[8px]"></i> Elite
+            </span>
+            <span id="headerLevelBadge" class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-medium border border-indigo-500/30">
+              Lvl <span class="user-level-val">1</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Balance & Notification -->
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-inner">
+          <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+          <span id="headerBalance" class="text-xs font-bold text-slate-100">0</span>
+          <span class="text-[9px] text-brand-accent font-semibold">NI</span>
+        </div>
+        <button onclick="showModal('notificationModal')" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white relative">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-brand-accent rounded-full animate-ping"></span>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-brand-accent rounded-full"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main id="appBody" class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24 space-y-4">
+      
+      <!-- ================= SECTION 1: HOME DASHBOARD ================= -->
+      <section id="tab-home" class="tab-content space-y-4">
+        <!-- Main Balance Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 p-5 border border-indigo-500/30 shadow-xl">
+          <!-- Background Glow Elements -->
+          <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-brand-accent/20 rounded-full blur-2xl"></div>
+          <div class="absolute -left-10 -top-10 w-28 h-28 bg-brand-500/30 rounded-full blur-2xl"></div>
+
+          <div class="relative z-10">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-indigo-200 font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-wallet text-brand-accent"></i> Total NI Balance
+              </span>
+              <button onclick="switchTab('withdraw')" class="text-[11px] bg-brand-accent/20 hover:bg-brand-accent/30 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/40 font-semibold transition">
+                Withdraw <i class="fa-solid fa-arrow-right text-[9px] ml-0.5"></i>
+              </button>
+            </div>
+
+            <div class="flex items-baseline gap-2 my-2">
+              <h2 id="homeTotalBalance" class="text-3xl font-extrabold tracking-tight text-white">0.00</h2>
+              <span class="text-sm font-bold text-brand-accent">NI Points</span>
+            </div>
+
+            <div class="pt-3 border-t border-indigo-500/20 flex justify-between items-center text-xs text-slate-300">
+              <div>
+                <span class="text-slate-400 block text-[10px]">Lifetime Earned</span>
+                <span id="homeLifetime" class="font-semibold text-slate-100">0.00 NI</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-400 block text-[10px]">Est. Value</span>
+                <span id="homeEstUsdt" class="font-semibold text-emerald-400">$0.00 USDT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Check-In Banner -->
+        <div class="glass-card rounded-2xl p-3.5 flex items-center justify-between border border-slate-700/60 shadow-md">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <i class="fa-solid fa-calendar-check text-lg"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-100">Daily Check-In Bonus</h4>
+              <p class="text-[10px] text-slate-400">Claim +50 NI Points every 24 hours</p>
+            </div>
+          </div>
+          <button id="dailyCheckInBtn" onclick="claimDailyReward()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-xl shadow-md transition transform active:scale-95">
+            Claim
+          </button>
+        </div>
+
+        <!-- Quick Access Action Grid -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-1">Quick Access</h3>
+          <div class="grid grid-cols-4 gap-2.5">
+            <button onclick="switchTab('earn')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-circle-play"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Watch Ads</span>
+            </button>
+
+            <button onclick="switchTab('spin')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-[#000] fa-dharmachakra"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Spin & Earn</span>
+            </button>
+
+            <button onclick="switchTab('tasks')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Social Task</span>
+            </button>
+
+            <button onclick="switchTab('refer')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-user-plus"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Referral</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Level System Summary -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-xs">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <span class="text-xs font-bold text-slate-100">Level Progression</span>
+            </div>
+            <span class="text-xs text-brand-accent font-bold">Level <span class="user-level-val">1</span> / 10</span>
+          </div>
+
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="levelProgressBar" class="bg-gradient-to-r from-brand-500 to-brand-accent h-full rounded-full transition-all duration-500" style="width: 15%;"></div>
+          </div>
+
+          <div class="flex justify-between text-[10px] text-slate-400">
+            <span>Watch ads to advance level</span>
+            <span id="levelProgressText">1 / 5 Ads Watched</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60">
+          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center justify-between">
+            <span>Recent Activity</span>
+            <i class="fa-solid fa-clock-rotate-left text-slate-500 text-xs"></i>
+          </h4>
+          <div id="recentActivityList" class="space-y-2.5 text-xs">
+            <!-- Dynamic items -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 2: WATCH ADS & EARN ================= -->
+      <section id="tab-earn" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-brand-accent bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-accent/20">Monetization Hub</span>
+          <h2 class="text-lg font-bold text-white">Watch Video Ads & Earn</h2>
+          <p class="text-xs text-slate-400">Watch short sponsored ads to claim instant NI Points & level up!</p>
+        </div>
+
+        <!-- Limits Stats Header -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Watched Today</span>
+            <span id="adsWatchedToday" class="text-sm font-bold text-brand-accent">0</span>
+          </div>
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Hourly Limit</span>
+            <span id="adsHourlyLimit" class="text-sm font-bold text-slate-200">0/15</span>
+          </div>
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Daily Cap</span>
+            <span id="adsDailyLimit" class="text-sm font-bold text-slate-200">0/60</span>
+          </div>
+        </div>
+
+        <!-- Ad Player Trigger Card -->
+        <div class="glass-card rounded-2xl p-5 border border-brand-500/30 text-center space-y-4 relative overflow-hidden">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 mx-auto flex items-center justify-center text-2xl text-white shadow-lg pulse-btn">
+            <i class="fa-solid fa-play"></i>
+          </div>
+
+          <div>
+            <h3 class="text-base font-bold text-white">Sponsored Video Ad #<span id="currentAdNum">1</span></h3>
+            <p class="text-xs text-amber-400 font-semibold mt-1">Reward: +25 NI Points per view</p>
+          </div>
+
+          <div class="p-3 bg-slate-900/60 rounded-xl text-left border border-slate-800 text-[11px] space-y-1 text-slate-400">
+            <div class="flex items-center gap-1.5 text-slate-300">
+              <i class="fa-solid fa-shield-halved text-emerald-400"></i> Anti-Bot Protection Active
+            </div>
+            <p>You must watch full 10-second video without closing to receive reward point validation.</p>
+          </div>
+
+          <button id="watchAdBtn" onclick="startVideoAdSimulation()" class="w-full py-3.5 bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-accent hover:opacity-95 text-white font-bold text-sm rounded-xl shadow-lg transition transform active:scale-98 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-circle-play"></i> Watch Ad Now
+          </button>
+        </div>
+
+        <!-- Ad Level Progression Details -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-400"></i> Level Unlock Status
+          </h4>
+          <p class="text-[11px] text-slate-400">Complete 5 video ads to finish your current level and unlock Level Bonus rewards!</p>
+          
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs text-slate-300 font-medium">
+              <span>Current Level <span class="user-level-val">1</span></span>
+              <span id="levelAdCounter">0 / 5 Ads Complete</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="levelAdBar" class="bg-brand-accent h-full w-0 transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 3: SPIN & EARN ================= -->
+      <section id="tab-spin" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-1">
+          <h2 class="text-lg font-bold text-white flex items-center justify-center gap-2">
+            <i class="fa-solid fa-[#000] fa-dharmachakra text-pink-400"></i> Spin & Win NI Points
+          </h2>
+          <p class="text-xs text-slate-400">Test your luck with the daily fortune wheel!</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 flex flex-col items-center justify-center relative py-6">
+          <div class="flex items-center gap-2 mb-4 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
+            <span class="text-slate-400">Daily Free Spins:</span>
+            <span id="freeSpinsCount" class="font-bold text-pink-400">3 Remaining</span>
+          </div>
+
+          <!-- Wheel Canvas Container -->
+          <div class="relative w-64 h-64 my-2">
+            <div class="wheel-pointer"></div>
+            <canvas id="spinCanvas" width="256" height="256" class="w-full h-full rounded-full border-4 border-slate-700 shadow-2xl"></canvas>
+          </div>
+
+          <!-- Spin Action Button -->
+          <button id="spinWheelBtn" onclick="spinWheel()" class="mt-6 px-10 py-3.5 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-lg transition transform active:scale-95 flex items-center gap-2">
+            <i class="fa-solid fa-dharmachakra"></i> SPIN WHEEL
+          </button>
+        </div>
+
+        <!-- Spin Info Card -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-2 text-xs">
+          <h4 class="font-bold text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-brand-accent"></i> Spin Wheel Rules
+          </h4>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+            <li>Get 3 Free Spins every 24 hours.</li>
+            <li>Earn up to 200 NI Points in a single spin.</li>
+            <li>Results are strictly determined transparently on random seed generation.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 4: SOCIAL TASKS ================= -->
+      <section id="tab-tasks" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-1">
+          <h2 class="text-lg font-bold text-white">Social Earn Tasks</h2>
+          <p class="text-xs text-slate-400">Join official communities & follow channels to earn instant rewards.</p>
+        </div>
+
+        <div class="space-y-3" id="socialTasksList">
+          <!-- Tasks dynamically generated -->
+        </div>
+      </section>
+
+      <!-- ================= SECTION 5: WITHDRAW & WALLET ================= -->
+      <section id="tab-withdraw" class="tab-content space-y-4 hidden">
+        <!-- Balance Overview Card -->
+        <div class="glass-card rounded-2xl p-5 border border-brand-500/30 space-y-4">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Available for Cashout</span>
+              <h3 id="withdrawAvailableBalance" class="text-2xl font-extrabold text-white mt-0.5">0.00 NI</h3>
+            </div>
+            <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Auto Payouts Active
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/50 text-xs">
+            <div>
+              <span class="text-slate-400 text-[10px] block">Pending Cashouts</span>
+              <span id="withdrawPendingBalance" class="font-semibold text-amber-400">0.00 NI</span>
+            </div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">Daily Cashout Limit</span>
+              <span id="dailyWithdrawLimitText" class="font-semibold text-sky-400">0 / 2 Requests</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automatic Payment Engine Banner -->
+        <div class="glass-card rounded-2xl p-3.5 border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 to-slate-900 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="text-xs">
+            <h4 class="font-bold text-slate-100 flex items-center gap-1.5">
+              Automatic Payment Gateway <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">Instant API</span>
+            </h4>
+            <p class="text-[10px] text-slate-400 mt-0.5">Withdrawals are verified & transferred automatically via Binance Pay / TON Blockchain API.</p>
+          </div>
+        </div>
+
+        <!-- NI Points Converter Calculator -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator text-brand-accent"></i> Real-time Converter Calculator
+          </h4>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label class="text-[9px] text-slate-400 block">NI Points Input</label>
+              <input type="number" id="calcInput" value="1000" oninput="calculateConversion()" class="bg-transparent text-sm font-bold text-white w-full outline-none">
+            </div>
+            <i class="fa-solid fa-arrow-right-arrow-left text-slate-500 text-xs"></i>
+            <div class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label class="text-[9px] text-slate-400 block">Estimated USDT</label>
+              <span id="calcResult" class="text-sm font-bold text-emerald-400 block mt-0.5">$1.00 USDT</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Withdrawal Request Form -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-4">
+          <h4 class="text-xs font-bold text-slate-200">Select Auto Payment Gateway</h4>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="selectWithdrawMethod('binance')" id="method-binance" class="withdraw-method-btn p-3 rounded-xl border border-brand-accent bg-brand-500/10 flex flex-col items-center gap-2 transition">
+              <i class="fa-solid fa-arrows-to-dot text-2xl text-amber-400"></i>
+              <span class="text-xs font-bold text-white">Binance Pay</span>
+            </button>
+            
+            <button onclick="selectWithdrawMethod('telegram')" id="method-telegram" class="withdraw-method-btn p-3 rounded-xl border border-slate-700 bg-slate-800/50 flex flex-col items-center gap-2 hover:border-slate-600 transition">
+              <i class="fa-brands fa-telegram text-2xl text-sky-400"></i>
+              <span class="text-xs font-bold text-white">Telegram Wallet / TON</span>
+            </button>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <div>
+              <label id="withdrawAccountLabel" class="text-xs text-slate-300 font-medium block mb-1">Binance Pay ID / Pay Email</label>
+              <input type="text" id="withdrawAccountInput" placeholder="Enter 9-digit Binance Pay ID" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-brand-accent">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 font-medium block mb-1">Amount (NI Points)</label>
+              <input type="number" id="withdrawAmountInput" placeholder="Minimum 500 NI" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-brand-accent">
+              <div class="flex justify-between items-center text-[10px] text-slate-400 mt-1">
+                <span>Min: 500 NI ($0.50 USDT)</span>
+                <button onclick="setMaxWithdraw()" class="text-brand-accent font-bold">USE MAX BALANCE</button>
+              </div>
+            </div>
+
+            <button id="submitWithdrawBtn" onclick="submitWithdrawal()" class="w-full py-3.5 bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-accent hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg transition transform active:scale-98 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-bolt"></i> Submit Auto Payout Request
+            </button>
+          </div>
+        </div>
+
+        <!-- Automatic Cashout History -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-xs font-bold text-slate-300">Auto Payment Logs</h4>
+            <span class="text-[10px] text-slate-400 font-mono">Live Sync</span>
+          </div>
+          <div id="withdrawHistoryList" class="space-y-2.5 text-xs">
+            <!-- Dynamic transactions -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 6: REFERRAL SYSTEM ================= -->
+      <section id="tab-refer" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-5 border border-brand-500/30 text-center space-y-3 relative overflow-hidden">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-xl">
+            <i class="fa-solid fa-users text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">Invite Friends & Earn More!</h2>
+            <p class="text-xs text-slate-300 mt-1">Earn <span class="text-amber-400 font-bold">100 NI Points</span> + 10% lifetime commission for every friend joined!</p>
+          </div>
+        </div>
+
+        <!-- Referral Link Generator Box -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <label class="text-xs text-slate-300 font-medium block">Your Unique Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="referralLinkInput" readonly value="https://t.me/AdGateBot?start=ref_928174" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none select-all">
+            <button onclick="copyReferralLink()" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 shrink-0">
+              <i class="fa-solid fa-copy"></i> Copy
+            </button>
+          </div>
+          
+          <button onclick="shareOnTelegram()" class="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-brands fa-telegram text-base"></i> Share via Telegram
+          </button>
+        </div>
+
+        <!-- Referral Stats Summary -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-card p-3.5 rounded-2xl border border-slate-700/60 text-center">
+            <span class="text-slate-400 text-[10px] block">Total Invites</span>
+            <span id="totalReferralsCount" class="text-lg font-extrabold text-white">0</span>
+          </div>
+          <div class="glass-card p-3.5 rounded-2xl border border-slate-700/60 text-center">
+            <span class="text-slate-400 text-[10px] block">Referral Bonus Earned</span>
+            <span id="totalReferralEarning" class="text-lg font-extrabold text-amber-400">0 NI</span>
+          </div>
+        </div>
+
+        <!-- Referral List -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60">
+          <h4 class="text-xs font-bold text-slate-300 mb-3">Referred Friends List</h4>
+          <div id="referralsList" class="space-y-2 text-xs">
+            <!-- Dynamic users -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 7: PROFILE & LEADERBOARD ================= -->
+      <section id="tab-profile" class="tab-content space-y-4 hidden">
+        <!-- User Profile Card -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 p-0.5 relative shadow-md">
+            <img src="https://placehold.co/100x100/312e81/ffffff?text=AG" alt="User Avatar" class="w-full h-full object-cover rounded-[14px]">
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-1.5">
+              <h3 class="font-bold text-sm text-white">Telegram User</h3>
+              <i class="fa-solid fa-circle-check text-brand-accent text-xs"></i>
+            </div>
+            <p class="text-[11px] text-slate-400">ID: #83920194</p>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-[9px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-500/30 font-semibold">
+                Level <span class="user-level-val">1</span> Tier
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Leaderboard Top 3 -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <i class="fa-solid fa-trophy text-amber-400"></i> Leaderboard Top Earners
+            </h4>
+            <span class="text-[10px] text-slate-400">Weekly Ranking</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 text-center">
+            <!-- Rank 2 -->
+            <div class="glass-card p-2.5 rounded-xl border border-slate-700/80 flex flex-col items-center">
+              <span class="text-[10px] font-bold text-slate-400">#2</span>
+              <div class="w-8 h-8 rounded-full bg-slate-700 my-1 overflow-hidden border border-slate-500">
+                <img src="https://placehold.co/80x80/1e293b/ffffff?text=U2" alt="User 2" class="w-full h-full object-cover">
+              </div>
+              <span class="text-[10px] font-bold text-slate-200 truncate w-full">CryptoKing</span>
+              <span class="text-[9px] font-semibold text-amber-400">12,450 NI</span>
+            </div>
+
+            <!-- Rank 1 -->
+            <div class="glass-card p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/5 flex flex-col items-center transform -translate-y-1">
+              <i class="fa-solid fa-crown text-amber-400 text-xs mb-0.5"></i>
+              <div class="w-9 h-9 rounded-full bg-amber-500/20 my-0.5 overflow-hidden border-2 border-amber-400">
+                <img src="https://placehold.co/80x80/d97706/ffffff?text=U1" alt="User 1" class="w-full h-full object-cover">
+              </div>
+              <span class="text-[10px] font-bold text-slate-100 truncate w-full">Alex_Pro</span>
+              <span class="text-[9px] font-semibold text-amber-400">28,900 NI</span>
+            </div>
+
+            <!-- Rank 3 -->
+            <div class="glass-card p-2.5 rounded-xl border border-slate-700/80 flex flex-col items-center">
+              <span class="text-[10px] font-bold text-slate-400">#3</span>
+              <div class="w-8 h-8 rounded-full bg-slate-700 my-1 overflow-hidden border border-slate-500">
+                <img src="https://placehold.co/80x80/1e293b/ffffff?text=U3" alt="User 3" class="w-full h-full object-cover">
+              </div>
+              <span class="text-[10px] font-bold text-slate-200 truncate w-full">Satoshi_N</span>
+              <span class="text-[9px] font-semibold text-amber-400">9,800 NI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help & Support links -->
+        <div class="glass-card rounded-2xl p-2 border border-slate-700/60 divide-y divide-slate-800 text-xs">
+          <a href="https://t.me" target="_blank" class="p-3 flex items-center justify-between text-slate-300 hover:text-white">
+            <span class="flex items-center gap-2"><i class="fa-brands fa-telegram text-sky-400"></i> Join Telegram Channel</span>
+            <i class="fa-solid fa-angle-right text-slate-500"></i>
+          </a>
+          <a href="https://t.me" target="_blank" class="p-3 flex items-center justify-between text-slate-300 hover:text-white">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-headset text-indigo-400"></i> Support Service</span>
+            <i class="fa-solid fa-angle-right text-slate-500"></i>
+          </a>
+          <a href="#" onclick="showModal('termsModal')" class="p-3 flex items-center justify-between text-slate-300 hover:text-white">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-contract text-emerald-400"></i> Terms & Anti-Cheat Rules</span>
+            <i class="fa-solid fa-angle-right text-slate-500"></i>
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Navigation Bar (Bottom Tabs) -->
+    <nav class="glass-nav absolute bottom-0 left-0 right-0 z-30 px-2 py-2 border-t border-slate-800">
+      <div class="grid grid-cols-6 gap-1">
+        <button onclick="switchTab('home')" id="nav-home" class="nav-btn active text-brand-accent flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-house text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Home</span>
+        </button>
+
+        <button onclick="switchTab('earn')" id="nav-earn" class="nav-btn text-slate-400 hover:text-slate-200 flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-circle-play text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Watch</span>
+        </button>
+
+        <button onclick="switchTab('spin')" id="nav-spin" class="nav-btn text-slate-400 hover:text-slate-200 flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-[#000] fa-dharmachakra text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Spin</span>
+        </button>
+
+        <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn text-slate-400 hover:text-slate-200 flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-list-check text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Tasks</span>
+        </button>
+
+        <button onclick="switchTab('withdraw')" id="nav-withdraw" class="nav-btn text-slate-400 hover:text-slate-200 flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-wallet text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Wallet</span>
+        </button>
+
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn text-slate-400 hover:text-slate-200 flex flex-col items-center py-1 transition">
+          <i class="fa-solid fa-user text-base"></i>
+          <span class="text-[9px] font-semibold mt-0.5">Profile</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Simulated Video Ad Overlay Modal -->
+  <div id="videoAdModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-md">
+    <div class="w-full max-w-sm glass-card rounded-2xl overflow-hidden border border-slate-700 shadow-2xl space-y-4 p-5 text-center relative">
+      <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800 pb-2">
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-rectangle-ad text-brand-accent"></i> Ad Gate Sponsor Video</span>
+        <span id="adTimerCount" class="font-bold text-amber-400">10s</span>
+      </div>
+
+      <!-- Video Player Skeleton Mock -->
+      <div class="relative w-full h-44 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-tr from-brand-900/50 to-indigo-900/50 animate-pulse"></div>
+        <div class="relative z-10 text-center space-y-2 p-3">
+          <i class="fa-solid fa-film text-3xl text-brand-accent animate-bounce"></i>
+          <p class="text-xs font-semibold text-slate-200">Watch full sponsored video to credit reward...</p>
+        </div>
+      </div>
+
+      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+        <div id="adProgressFill" class="bg-brand-accent h-full w-0 transition-all duration-1000 ease-linear"></div>
+      </div>
+
+      <button id="closeAdBtn" disabled onclick="closeAdModal()" class="w-full py-2.5 bg-slate-800 text-slate-500 font-bold text-xs rounded-xl transition cursor-not-allowed">
+        Please wait (10s)...
+      </button>
+    </div>
+  </div>
+
+  <!-- Spin Wheel Reward Result Modal -->
+  <div id="spinRewardModal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="w-full max-w-xs glass-card rounded-2xl p-5 border border-pink-500/30 text-center space-y-3 shadow-2xl">
+      <div class="w-14 h-14 bg-pink-500/20 text-pink-400 rounded-full mx-auto flex items-center justify-center text-2xl">
+        <i class="fa-solid fa-gift"></i>
+      </div>
+      <h3 class="text-base font-bold text-white">Congratulations!</h3>
+      <p class="text-xs text-slate-300">You won <span id="spinRewardAmount" class="font-extrabold text-amber-400 text-sm">0</span> NI Points!</p>
+      <button onclick="closeModal('spinRewardModal')" class="w-full py-2.5 bg-gradient-to-r from-pink-500 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md">
+        Collect Points
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Modal -->
+  <div id="notificationModal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="w-full max-w-xs glass-card rounded-2xl p-5 border border-slate-700 text-center space-y-3">
+      <h3 class="text-sm font-bold text-white">Notifications</h3>
+      <p class="text-xs text-slate-300">Welcome to Ad Gate! Earn NI points by watching ads, completing daily tasks and referring friends.</p>
+      <button onclick="closeModal('notificationModal')" class="w-full py-2 bg-brand-600 text-white font-bold text-xs rounded-xl">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div id="termsModal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="w-full max-w-xs glass-card rounded-2xl p-5 border border-slate-700 text-left space-y-3">
+      <h3 class="text-sm font-bold text-white">Ad Gate Rules</h3>
+      <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+        <li>Multiple accounts from single device strictly prohibited.</li>
+        <li>Auto-clickers or bots will trigger instant ban.</li>
+        <li>Minimum withdrawal requirement: 500 NI Points.</li>
+      </ul>
+      <button onclick="closeModal('termsModal')" class="w-full py-2 bg-brand-600 text-white font-bold text-xs rounded-xl mt-2">
+        I Understand
+      </button>
+    </div>
+  </div>
+
+  <!-- APP LOGIC SCRIPT -->
+  <script>
+    // State Management
+    let state = {
+      balance: 150.00,
+      lifetimeEarned: 150.00,
+      pendingBalance: 0.00,
+      level: 1,
+      adsWatchedLevel: 0,
+      adsWatchedToday: 3,
+      dailyWithdrawalsCount: 0,
+      maxDailyWithdrawals: 2,
+      freeSpins: 3,
+      referrals: [],
+      selectedMethod: 'binance',
+      history: [
+        { title: "Daily Check-In", amount: "+50 NI", date: "Today, 10:15 AM", type: "earn" },
+        { title: "Ad Reward #1", amount: "+25 NI", date: "Today, 11:30 AM", type: "earn" }
+      ],
+      withdrawHistory: [
+        { id: "AG-829104", amount: "500 NI ($0.50)", status: "COMPLETED", txHash: "0x89a...2f4b", method: "Binance Pay", date: "2026-10-28 14:20" }
+      ]
+    };
+
+    // Social Tasks List Seed
+    const socialTasks = [
+      { id: 1, name: "Join Official Telegram Channel", reward: 100, icon: "fa-brands fa-telegram text-sky-400", link: "https://t.me", done: false },
+      { id: 2, name: "Subscribe YouTube Channel", reward: 80, icon: "fa-brands fa-youtube text-red-500", link: "https://youtube.com", done: false },
+      { id: 3, name: "Follow Ad Gate on Twitter / X", reward: 60, icon: "fa-brands fa-x-twitter text-slate-200", link: "https://twitter.com", done: false },
+      { id: 4, name: "Join Ad Gate Community Group", reward: 50, icon: "fa-brands fa-telegram text-sky-400", link: "https://t.me", done: false }
+    ];
+
+    // Wheel Segment Values
+    const wheelRewards = [50, 10, 100, 25, 200, 15, 75, 5];
+    const wheelColors = ['#4f46e5', '#06b6d4', '#4338ca', '#0284c7', '#3b82f6', '#0891b2', '#6366f1', '#0d9488'];
+
+    // Tab Navigation
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('active', 'text-brand-accent');
+        el.classList.add('text-slate-400');
+      });
+
+      const activeTab = document.getElementById(`tab-${tabId}`);
+      if(activeTab) activeTab.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if(activeBtn) {
+        activeBtn.classList.add('active', 'text-brand-accent');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if(tabId === 'spin') drawSpinWheel(0);
+    }
+
+    // Dynamic UI Renderer
+    function updateUI() {
+      // Balances
+      document.getElementById('headerBalance').innerText = state.balance.toFixed(0);
+      document.getElementById('homeTotalBalance').innerText = state.balance.toFixed(2);
+      document.getElementById('homeLifetime').innerText = `${state.lifetimeEarned.toFixed(2)} NI`;
+      document.getElementById('withdrawAvailableBalance').innerText = `${state.balance.toFixed(2)} NI`;
+      document.getElementById('withdrawPendingBalance').innerText = `${state.pendingBalance.toFixed(2)} NI`;
+      document.getElementById('dailyWithdrawLimitText').innerText = `${state.dailyWithdrawalsCount} / ${state.maxDailyWithdrawals} Today`;
+      
+      // USD Value ($1 = 1000 NI)
+      const usdtVal = (state.balance / 1000).toFixed(2);
+      document.getElementById('homeEstUsdt').innerText = `$${usdtVal} USDT`;
+
+      // Level UI
+      document.querySelectorAll('.user-level-val').forEach(el => el.innerText = state.level);
+      document.getElementById('levelProgressText').innerText = `${state.adsWatchedLevel} / 5 Ads Watched`;
+      const levelPct = (state.adsWatchedLevel / 5) * 100;
+      document.getElementById('levelProgressBar').style.width = `${levelPct}%`;
+      document.getElementById('levelAdBar').style.width = `${levelPct}%`;
+      document.getElementById('levelAdCounter').innerText = `${state.adsWatchedLevel} / 5 Ads Complete`;
+
+      // Earn Tab Stats
+      document.getElementById('adsWatchedToday').innerText = state.adsWatchedToday;
+      document.getElementById('adsHourlyLimit').innerText = `${state.adsWatchedToday % 15}/15`;
+      document.getElementById('adsDailyLimit').innerText = `${state.adsWatchedToday}/60`;
+      document.getElementById('currentAdNum').innerText = state.adsWatchedToday + 1;
+
+      // Free Spins
+      document.getElementById('freeSpinsCount').innerText = `${state.freeSpins} Remaining`;
+
+      // Activity Feed
+      renderRecentActivity();
+      renderWithdrawHistory();
+      renderSocialTasks();
+      renderReferralList();
+    }
+
+    function renderRecentActivity() {
+      const container = document.getElementById('recentActivityList');
+      container.innerHTML = state.history.map(item => `
+        <div class="flex justify-between items-center bg-slate-900/50 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-arrow-down-left"></i>
+            </div>
+            <div>
+              <span class="font-bold text-slate-200 block">${item.title}</span>
+              <span class="text-[10px] text-slate-500">${item.date}</span>
+            </div>
+          </div>
+          <span class="font-bold text-emerald-400">${item.amount}</span>
+        </div>
+      `).join('');
+    }
+
+    // Daily Check In
+    function claimDailyReward() {
+      state.balance += 50;
+      state.lifetimeEarned += 50;
+      state.history.unshift({ title: "Daily Check-In", amount: "+50 NI", date: "Just Now", type: "earn" });
+      
+      const btn = document.getElementById('dailyCheckInBtn');
+      btn.innerText = "Claimed";
+      btn.disabled = true;
+      btn.className = "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold text-xs rounded-xl border border-slate-700 cursor-not-allowed";
+
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      updateUI();
+    }
+
+    // Watch Ad Simulator Logic
+    let adInterval;
+    function startVideoAdSimulation() {
+      if(state.adsWatchedToday >= 60) {
+        alert("Daily ad limit reached! Please come back tomorrow.");
+        return;
+      }
+
+      const modal = document.getElementById('videoAdModal');
+      const timerEl = document.getElementById('adTimerCount');
+      const progressFill = document.getElementById('adProgressFill');
+      const closeBtn = document.getElementById('closeAdBtn');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      let timeLeft = 10;
+      timerEl.innerText = `${timeLeft}s`;
+      progressFill.style.width = '0%';
+      closeBtn.disabled = true;
+      closeBtn.innerText = "Please wait (10s)...";
+      closeBtn.className = "w-full py-2.5 bg-slate-800 text-slate-500 font-bold text-xs rounded-xl cursor-not-allowed";
+
+      let elapsed = 0;
+      adInterval = setInterval(() => {
+        elapsed++;
+        timeLeft = 10 - elapsed;
+        timerEl.innerText = `${timeLeft}s`;
+        progressFill.style.width = `${(elapsed / 10) * 100}%`;
+
+        if (elapsed >= 10) {
+          clearInterval(adInterval);
+          closeBtn.disabled = false;
+          closeBtn.innerText = "Claim Reward & Close";
+          closeBtn.className = "w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg cursor-pointer";
+        }
+      }, 1000);
+    }
+
+    function closeAdModal() {
+      const modal = document.getElementById('videoAdModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+
+      // Credit Ad Reward
+      const reward = 25;
+      state.balance += reward;
+      state.lifetimeEarned += reward;
+      state.adsWatchedToday++;
+      state.adsWatchedLevel++;
+
+      // Level progression check (5 ads = 1 level)
+      if(state.adsWatchedLevel >= 5) {
+        state.level++;
+        state.adsWatchedLevel = 0;
+        confetti({ particleCount: 100, spread: 80 });
+      }
+
+      state.history.unshift({ title: `Ad Reward #${state.adsWatchedToday}`, amount: `+${reward} NI`, date: "Just Now", type: "earn" });
+      updateUI();
+    }
+
+    // Canvas Spin Wheel Implementation
+    let currentWheelRotation = 0;
+    let isSpinning = false;
+
+    function drawSpinWheel(rotationAngle = 0) {
+      const canvas = document.getElementById('spinCanvas');
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const numSegments = wheelRewards.length;
+      const arc = (2 * Math.PI) / numSegments;
+      const radius = canvas.width / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < numSegments; i++) {
+        const angle = rotationAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = wheelColors[i % wheelColors.length];
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius - 4, angle, angle + arc);
+        ctx.lineTo(radius, radius);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        // Draw Reward Text
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px Inter, sans-serif";
+        ctx.fillText(`${wheelRewards[i]} NI`, radius - 18, 4);
+        ctx.restore();
+      }
+
+      // Draw Wheel Center Cap
+      ctx.beginPath();
+      ctx.arc(radius, radius, 22, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#6366f1';
+      ctx.stroke();
+
+      ctx.fillStyle = '#06b6d4';
+      ctx.font = "bold 10px Inter";
+      ctx.textAlign = "center";
+      ctx.fillText("AD GATE", radius, radius + 3);
+    }
+
+    function spinWheel() {
+      if(isSpinning) return;
+      if(state.freeSpins <= 0) {
+        alert("No free spins left today! Watch ads or refer friends to earn more.");
+        return;
+      }
+
+      isSpinning = true;
+      state.freeSpins--;
+      updateUI();
+
+      const numSegments = wheelRewards.length;
+      const selectedIndex = Math.floor(Math.random() * numSegments);
+      const reward = wheelRewards[selectedIndex];
+
+      const segmentAngle = (2 * Math.PI) / numSegments;
+      // Calculate target rotation to land segment under top pointer (-Math.PI / 2)
+      const extraSpins = 5 * 2 * Math.PI; // 5 full turns
+      const targetAngle = extraSpins + ((numSegments - selectedIndex) * segmentAngle) - (Math.PI / 2) - (segmentAngle / 2);
+
+      const startAngle = currentWheelRotation;
+      const duration = 4000;
+      const startTime = performance.now();
+
+      function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        currentWheelRotation = startAngle + (targetAngle - startAngle) * easeOut;
+        drawSpinWheel(currentWheelRotation);
+
+        if(progress < 1) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          isSpinning = false;
+          state.balance += reward;
+          state.lifetimeEarned += reward;
+          state.history.unshift({ title: "Spin Reward", amount: `+${reward} NI`, date: "Just Now", type: "earn" });
+          updateUI();
+
+          document.getElementById('spinRewardAmount').innerText = reward;
+          showModal('spinRewardModal');
+          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        }
+      }
+
+      requestAnimationFrame(animateSpin);
+    }
+
+    // Social Tasks Logic
+    function renderSocialTasks() {
+      const container = document.getElementById('socialTasksList');
+      container.innerHTML = socialTasks.map(task => `
+        <div class="glass-card rounded-xl p-3.5 border border-slate-700/60 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg">
+              <i class="${task.icon}"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-100">${task.name}</h4>
+              <span class="text-[10px] text-amber-400 font-semibold">+${task.reward} NI Points</span>
+            </div>
+          </div>
+          
+          ${task.done ? `
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/30 font-bold">
+              <i class="fa-solid fa-check"></i> Verified
+            </span>
+          ` : `
+            <div class="flex items-center gap-1.5">
+              <a href="${task.link}" target="_blank" onclick="enableVerifyBtn(${task.id})" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] rounded-lg border border-slate-700">
+                Join
+              </a>
+              <button id="verifyBtn-${task.id}" onclick="verifyTask(${task.id})" class="px-2.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-[11px] rounded-lg">
+                Verify
+              </button>
+            </div>
+          `}
+        </div>
+      `).join('');
+    }
+
+    function enableVerifyBtn(id) {
+      // Just visual feedback when link clicked
+      const btn = document.getElementById(`verifyBtn-${id}`);
+      if(btn) btn.classList.add('pulse-btn');
+    }
+
+    function verifyTask(id) {
+      const task = socialTasks.find(t => t.id === id);
+      if(task && !task.done) {
+        task.done = true;
+        state.balance += task.reward;
+        state.lifetimeEarned += task.reward;
+        state.history.unshift({ title: `Task: ${task.name}`, amount: `+${task.reward} NI`, date: "Just Now", type: "earn" });
+        updateUI();
+        confetti({ particleCount: 40, spread: 50 });
+      }
+    }
+
+    // Withdrawal Logic
+    function selectWithdrawMethod(method) {
+      state.selectedMethod = method;
+      document.querySelectorAll('.withdraw-method-btn').forEach(btn => {
+        btn.classList.remove('border-brand-accent', 'bg-brand-500/10');
+        btn.classList.add('border-slate-700', 'bg-slate-800/50');
+      });
+
+      const selectedBtn = document.getElementById(`method-${method}`);
+      if(selectedBtn) {
+        selectedBtn.classList.add('border-brand-accent', 'bg-brand-500/10');
+        selectedBtn.classList.remove('border-slate-700', 'bg-slate-800/50');
+      }
+
+      const inputLabel = document.getElementById('withdrawAccountLabel');
+      const inputField = document.getElementById('withdrawAccountInput');
+
+      if(method === 'binance') {
+        inputLabel.innerText = "Binance Pay ID / Email";
+        inputField.placeholder = "Enter Binance ID (e.g. 28491029)";
+      } else {
+        inputLabel.innerText = "Telegram Wallet Address / Username";
+        inputField.placeholder = "Enter TON Address or Telegram ID";
+      }
+    }
+
+    function setMaxWithdraw() {
+      document.getElementById('withdrawAmountInput').value = Math.floor(state.balance);
+    }
+
+    function calculateConversion() {
+      const val = parseFloat(document.getElementById('calcInput').value) || 0;
+      const usdt = (val / 1000).toFixed(2);
+      document.getElementById('calcResult').innerText = `$${usdt} USDT`;
+    }
+
+    function submitWithdrawal() {
+      const account = document.getElementById('withdrawAccountInput').value.trim();
+      const amount = parseFloat(document.getElementById('withdrawAmountInput').value);
+
+      if(state.dailyWithdrawalsCount >= state.maxDailyWithdrawals) {
+        alert("Daily automatic cashout limit reached (Max 2 requests/day). Try again tomorrow!");
+        return;
+      }
+
+      if(!account) {
+        alert("Please enter a valid payout address or Binance Pay ID.");
+        return;
+      }
+
+      if(isNaN(amount) || amount < 500) {
+        alert("Minimum withdrawal limit is 500 NI Points ($0.50 USDT).");
+        return;
+      }
+
+      if(amount > state.balance) {
+        alert("Insufficient NI Points balance!");
+        return;
+      }
+
+      // Process Automatic Payout Request Engine
+      state.balance -= amount;
+      state.pendingBalance += amount;
+      state.dailyWithdrawalsCount++;
+
+      const txId = "AG-" + Math.floor(100000 + Math.random() * 900000);
+      const usdtVal = (amount / 1000).toFixed(2);
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+      const txRecord = {
+        id: txId,
+        amount: `${amount} NI ($${usdtVal})`,
+        status: "PROCESSING",
+        txHash: "Verifying API...",
+        method: state.selectedMethod === 'binance' ? 'Binance Pay' : 'Telegram Wallet (TON)',
+        date: now
+      };
+
+      state.withdrawHistory.unshift(txRecord);
+      document.getElementById('withdrawAmountInput').value = '';
+      updateUI();
+
+      // Trigger Telegram WebApp Haptic Feedback if available
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+
+      // Automated Payment Gateway Processing Simulation
+      setTimeout(() => {
+        txRecord.status = "DISPATCHING";
+        txRecord.txHash = "Broadcasting Tx...";
+        updateUI();
+
+        setTimeout(() => {
+          txRecord.status = "COMPLETED";
+          txRecord.txHash = state.selectedMethod === 'binance' ? `BP${Math.floor(Math.random()*10000000)}` : `0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`;
+          state.pendingBalance -= amount;
+          updateUI();
+          confetti({ particleCount: 60, spread: 60 });
+        }, 3500);
+
+      }, 2500);
+    }
+
+    function renderWithdrawHistory() {
+      const container = document.getElementById('withdrawHistoryList');
+      if(state.withdrawHistory.length === 0) {
+        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-2">No payout requests submitted yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = state.withdrawHistory.map(tx => `
+        <div class="glass-card p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-slate-200 text-xs">${tx.method}</span>
+              <span class="text-[9px] text-slate-400 font-mono">(${tx.id})</span>
+            </div>
+            <span class="font-bold text-amber-400 text-xs">${tx.amount}</span>
+          </div>
+
+          <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+            <span class="font-mono text-slate-500">TXID: ${tx.txHash}</span>
+            <span class="px-2 py-0.5 rounded-full font-bold text-[9px] ${
+              tx.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
+              tx.status === 'PROCESSING' || tx.status === 'DISPATCHING' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' : 
+              'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+            }">
+              ${tx.status === 'PROCESSING' ? '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Checking' : 
+                tx.status === 'DISPATCHING' ? '<i class="fa-solid fa-paper-plane mr-1"></i> Sending' : 
+                '<i class="fa-solid fa-check mr-1"></i> Sent'} ${tx.status}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Referral System Logic
+    function copyReferralLink() {
+      const copyText = document.getElementById("referralLinkInput");
+      copyText.select();
+      document.execCommand("copy");
+      alert("Referral link copied to clipboard!");
+    }
+
+    function shareOnTelegram() {
+      const url = encodeURIComponent(document.getElementById("referralLinkInput").value);
+      const text = encodeURIComponent("Join Ad Gate Mini App & earn crypto rewards by watching video ads!");
+      window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank');
+    }
+
+    function renderReferralList() {
+      const container = document.getElementById('referralsList');
+      document.getElementById('totalReferralsCount').innerText = state.referrals.length;
+      document.getElementById('totalReferralEarning').innerText = `${state.referrals.length * 100} NI`;
+
+      if(state.referrals.length === 0) {
+        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-3">No referred friends yet. Invite friends to start earning!</p>`;
+        return;
+      }
+    }
+
+    // Generic Modal Helper
+    function showModal(id) {
+      const modal = document.getElementById(id);
+      if(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if(modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // Initialize App
+    window.onload = function() {
+      updateUI();
+      drawSpinWheel(0);
+    };
+  </script>
+</body>
+</html>
