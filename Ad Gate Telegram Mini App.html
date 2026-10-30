@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ad Gate - Telegram Mini App</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f3ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              accent: '#06b6d4',
+              accentHover: '#0891b2'
+            },
+            darkBg: '#0f172a',
+            cardBg: '#1e293b',
+            borderDark: '#334155'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #090d16;
+      color: #f8fafc;
+    }
+
+    /* Hide Scrollbar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-nav {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Wheel Pointer */
+    .wheel-pointer {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 24px solid #f43f5e;
+      position: absolute;
+      top: -10px;
+      left: calc(50% - 14px);
+      z-index: 20;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    /* Glow Effects */
+    .glow-purple {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Pulse animation */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.6); }
+    }
+
+    .pulse-btn {
+      animation: pulseGlow 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 flex justify-center items-center min-h-screen p-0 sm:p-4 overflow-x-hidden">
+
+  <!-- Main Mobile App Shell -->
+  <div class="w-full max-w-md h-screen sm:h-[844px] bg-darkBg sm:rounded-[36px] shadow-2xl relative flex flex-col overflow-hidden border border-slate-800">
+
+    <!-- Top Header / App Bar -->
+    <header class="pt-4 pb-3 px-4 glass-card sticky top-0 z-30 flex items-center justify-between border-b border-slate-800/80">
+      <div class="flex items-center gap-3">
+        <!-- Ad Gate SVG Logo -->
+        <div class="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-brand-accent p-0.5 shadow-md flex items-center justify-center">
+          <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-base tracking-wide bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">Ad Gate</span>
+            <span class="text-[10px] bg-brand-500/20 text-brand-accent px-1.5 py-0.5 rounded-full font-semibold border border-brand-accent/30">v2.0</span>
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.2 rounded font-medium border border-amber-500/20 flex items-center gap-1">
+              <i class="fa-solid fa-crown text-[8px]"></i> Elite
+            </span>
+            <span id="headerLevelBadge" class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-medium border border-indigo-500/30">
+              Lvl <span class="user-level-val">1</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Balance & Notification -->
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-inner">
+          <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+          <span id="headerBalance" class="text-xs font-bold text-slate-100">0</span>
+          <span class="text-[9px] text-brand-accent font-semibold">NI</span>
+        </div>
+        <button onclick="showModal('notificationModal')" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white relative">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-brand-accent rounded-full animate-ping"></span>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-brand-accent rounded-full"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main id="appBody" class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24 space-y-4">
+      
+      <!-- ================= SECTION 1: HOME DASHBOARD ================= -->
+      <section id="tab-home" class="tab-content space-y-4">
+        <!-- Main Balance Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 p-5 border border-indigo-500/30 shadow-xl">
+          <!-- Background Glow Elements -->
+          <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-brand-accent/20 rounded-full blur-2xl"></div>
+          <div class="absolute -left-10 -top-10 w-28 h-28 bg-brand-500/30 rounded-full blur-2xl"></div>
+
+          <div class="relative z-10">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-indigo-200 font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-wallet text-brand-accent"></i> Total NI Balance
+              </span>
+              <button onclick="switchTab('withdraw')" class="text-[11px] bg-brand-accent/20 hover:bg-brand-accent/30 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/40 font-semibold transition">
+                Withdraw <i class="fa-solid fa-arrow-right text-[9px] ml-0.5"></i>
+              </button>
+            </div>
+
+            <div class="flex items-baseline gap-2 my-2">
+              <h2 id="homeTotalBalance" class="text-3xl font-extrabold tracking-tight text-white">0.00</h2>
+              <span class="text-sm font-bold text-brand-accent">NI Points</span>
+            </div>
+
+            <div class="pt-3 border-t border-indigo-500/20 flex justify-between items-center text-xs text-slate-300">
+              <div>
+                <span class="text-slate-400 block text-[10px]">Lifetime Earned</span>
+                <span id="homeLifetime" class="font-semibold text-slate-100">0.00 NI</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-400 block text-[10px]">Est. Value</span>
+                <span id="homeEstUsdt" class="font-semibold text-emerald-400">$0.00 USDT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Check-In Banner -->
+        <div class="glass-card rounded-2xl p-3.5 flex items-center justify-between border border-slate-700/60 shadow-md">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <i class="fa-solid fa-calendar-check text-lg"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-100">Daily Check-In Bonus</h4>
+              <p class="text-[10px] text-slate-400">Claim +50 NI Points every 24 hours</p>
+            </div>
+          </div>
+          <button id="dailyCheckInBtn" onclick="claimDailyReward()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-xl shadow-md transition transform active:scale-95">
+            Claim
+          </button>
+        </div>
+
+        <!-- Quick Access Action Grid -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-1">Quick Access</h3>
+          <div class="grid grid-cols-4 gap-2.5">
+            <button onclick="switchTab('earn')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-circle-play"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Watch Ads</span>
+            </button>
+
+            <button onclick="switchTab('spin')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-[#000] fa-dharmachakra"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Spin & Earn</span>
+            </button>
+
+            <button onclick="switchTab('tasks')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Social Task</span>
+            </button>
+
+            <button onclick="switchTab('refer')" class="glass-card hover:bg-slate-800/80 p-3 rounded-xl flex flex-col items-center gap-2 border border-slate-700/50 transition transform active:scale-95 text-center">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-user-plus"></i>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-200">Referral</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Level System Summary -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-xs">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <span class="text-xs font-bold text-slate-100">Level Progression</span>
+            </div>
+            <span class="text-xs text-brand-accent font-bold">Level <span class="user-level-val">1</span> / 10</span>
+          </div>
+
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="levelProgressBar" class="bg-gradient-to-r from-brand-500 to-brand-accent h-full rounded-full transition-all duration-500" style="width: 15%;"></div>
+          </div>
+
+          <div class="flex justify-between text-[10px] text-slate-400">
+            <span>Watch ads to advance level</span>
+            <span id="levelProgressText">1 / 5 Ads Watched</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60">
+          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center justify-between">
+            <span>Recent Activity</span>
+            <i class="fa-solid fa-clock-rotate-left text-slate-500 text-xs"></i>
+          </h4>
+          <div id="recentActivityList" class="space-y-2.5 text-xs">
+            <!-- Dynamic items -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 2: WATCH ADS & EARN ================= -->
+      <section id="tab-earn" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-brand-accent bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-accent/20">Monetization Hub</span>
+          <h2 class="text-lg font-bold text-white">Watch Video Ads & Earn</h2>
+          <p class="text-xs text-slate-400">Watch short sponsored ads to claim instant NI Points & level up!</p>
+        </div>
+
+        <!-- Limits Stats Header -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Watched Today</span>
+            <span id="adsWatchedToday" class="text-sm font-bold text-brand-accent">0</span>
+          </div>
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Hourly Limit</span>
+            <span id="adsHourlyLimit" class="text-sm font-bold text-slate-200">0/15</span>
+          </div>
+          <div class="glass-card p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 block">Daily Cap</span>
+            <span id="adsDailyLimit" class="text-sm font-bold text-slate-200">0/60</span>
+          </div>
+        </div>
+
+        <!-- Ad Player Trigger Card -->
+        <div class="glass-card rounded-2xl p-5 border border-brand-500/30 text-center space-y-4 relative overflow-hidden">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 mx-auto flex items-center justify-center text-2xl text-white shadow-lg pulse-btn">
+            <i class="fa-solid fa-play"></i>
+          </div>
+
+          <div>
+            <h3 class="text-base font-bold text-white">Sponsored Video Ad #<span id="currentAdNum">1</span></h3>
+            <p class="text-xs text-amber-400 font-semibold mt-1">Reward: +25 NI Points per view</p>
+          </div>
+
+          <div class="p-3 bg-slate-900/60 rounded-xl text-left border border-slate-800 text-[11px] space-y-1 text-slate-400">
+            <div class="flex items-center gap-1.5 text-slate-300">
+              <i class="fa-solid fa-shield-halved text-emerald-400"></i> Anti-Bot Protection Active
+            </div>
+            <p>You must watch full 10-second video without closing to receive reward point validation.</p>
+          </div>
+
+          <button id="watchAdBtn" onclick="startVideoAdSimulation()" class="w-full py-3.5 bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-accent hover:opacity-95 text-white font-bold text-sm rounded-xl shadow-lg transition transform active:scale-98 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-circle-play"></i> Watch Ad Now
+          </button>
+        </div>
+
+        <!-- Ad Level Progression Details -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-400"></i> Level Unlock Status
+          </h4>
+          <p class="text-[11px] text-slate-400">Complete 5 video ads to finish your current level and unlock Level Bonus rewards!</p>
+          
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs text-slate-300 font-medium">
+              <span>Current Level <span class="user-level-val">1</span></span>
+              <span id="levelAdCounter">0 / 5 Ads Complete</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="levelAdBar" class="bg-brand-accent h-full w-0 transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 3: SPIN & EARN ================= -->
+      <section id="tab-spin" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-1">
+          <h2 class="text-lg font-bold text-white flex items-center justify-center gap-2">
+            <i class="fa-solid fa-[#000] fa-dharmachakra text-pink-400"></i> Spin & Win NI Points
+          </h2>
+          <p class="text-xs text-slate-400">Test your luck with the daily fortune wheel!</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 flex flex-col items-center justify-center relative py-6">
+          <div class="flex items-center gap-2 mb-4 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
+            <span class="text-slate-400">Daily Free Spins:</span>
+            <span id="freeSpinsCount" class="font-bold text-pink-400">3 Remaining</span>
+          </div>
+
+          <!-- Wheel Canvas Container -->
+          <div class="relative w-64 h-64 my-2">
+            <div class="wheel-pointer"></div>
+            <canvas id="spinCanvas" width="256" height="256" class="w-full h-full rounded-full border-4 border-slate-700 shadow-2xl"></canvas>
+          </div>
+
+          <!-- Spin Action Button -->
+          <button id="spinWheelBtn" onclick="spinWheel()" class="mt-6 px-10 py-3.5 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-lg transition transform active:scale-95 flex items-center gap-2">
+            <i class="fa-solid fa-dharmachakra"></i> SPIN WHEEL
+          </button>
+        </div>
+
+        <!-- Spin Info Card -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 space-y-2 text-xs">
+          <h4 class="font-bold text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-brand-accent"></i> Spin Wheel Rules
+          </h4>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+            <li>Get 3 Free Spins every 24 hours.</li>
+            <li>Earn up to 200 NI Points in a single spin.</li>
+            <li>Results are strictly determined transparently on random seed generation.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 4: SOCIAL TASKS ================= -->
+      <section id="tab-tasks" class="tab-content space-y-4 hidden">
+        <div class="glass-card rounded-2xl p-4 border border-slate-700/60 text-center space-y-1">
+   
